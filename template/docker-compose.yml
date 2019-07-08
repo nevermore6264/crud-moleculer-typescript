@@ -1,0 +1,57 @@
+version: "3.0"
+
+services:
+
+  api:
+    build:
+      context: .
+    image: {{projectName}}
+    env_file: docker-compose.env
+    environment:
+      SERVICES: api
+      PORT: 3000
+    links:
+    labels:
+      - "traefik.enable=true"   
+      - "traefik.backend=api"
+      - "traefik.port=3000"
+      - "traefik.frontend.entryPoints=http"
+      - "traefik.frontend.rule=PathPrefix:/"
+
+  greeter:
+    build:
+      context: .
+    image: {{projectName}}
+    env_file: docker-compose.env
+    environment:
+      SERVICES: greeter
+    links:
+    depends_on:
+  nats:
+    image: nats
+  redis:
+    image: redis:alpine
+  mqtt:
+    image: ncarlier/mqtt
+  amqp:
+    image: rabbitmq:3
+  stan:
+    image: nats-streaming
+  zookeeper:
+    image: bitnami/zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: bitnami/kafka
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes  
+  traefik:
+    image: traefik
+    command: --web --docker --docker.domain=docker.localhost --logLevel=INFO --docker.exposedbydefault=false
+    ports:
+      - "3000:80"
+      - "3001:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev/null:/traefik.toml
